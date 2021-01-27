@@ -26,54 +26,55 @@ class SearchInFileQuery
         $file->seek(PHP_INT_MAX);
         $linesTotal = $file->key();
 
-        $step = (int)ceil(($linesTotal + 1) / 2);
-        $currentLineNumber = $step;
-
-        $visited = [];
-        do {
-            if (in_array($currentLineNumber, $visited, true)) {
-                break;
-            }
-            $visited[] = $currentLineNumber;
-            $file->seek($currentLineNumber - 1);
-            $currentLineContent = $file->current();
-            $currentTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
-
-            if ($currentTimestamp > $timestamp) {
-                $currentLineNumber -= ($step = $step > 1 ? (int)floor($step / 2) : 1);
-            } elseif ($currentTimestamp < $timestamp) {
-                $currentLineNumber += ($step = $step > 3 ? (int)ceil($step / 2) : 1);
-            } else {
-                break;
-            }
-        } while ($currentLineNumber > 0 && $currentLineNumber <= $linesTotal);
-
-        if ($currentTimestamp === $timestamp) {
-            // find same as $currentLineNumber and save to $exact
-            $entity->setExact($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber, $linesTotal));
+        if ($linesTotal <= 0) {
             return $entity;
         }
 
-        if ($currentLineNumber <= 0 || $currentLineNumber >= $linesTotal) {
-            if ($currentTimestamp > $timestamp) {
-                // find same as line no 1 and save to $before
-                $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, 1, $linesTotal));
+        $low = 0;
+        $high = $linesTotal - 1;
+
+        $currentLineNumber = 0;
+        $currentTimestamp = 0;
+        $visited = [];
+
+        while ($low <= $high) {
+            $currentLineNumber = (int)floor(($low + $high) / 2);
+            $visited[] = $currentLineNumber;
+
+            $file->seek($currentLineNumber);
+            $currentLineContent = $file->current();
+            $currentTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
+
+            if ($currentTimestamp === $timestamp) {
+                $entity->setExact($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber, $linesTotal));
                 return $entity;
             }
-            if ($currentTimestamp < $timestamp) {
-                // find same as line no $linesTotal and save to $before
-                $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $linesTotal, $linesTotal));
-                return $entity;
+
+            if ($timestamp < $currentTimestamp) {
+                $high = $currentLineNumber - 1;
+            } else {
+                $low = $currentLineNumber + 1;
             }
         }
 
+        if ($timestamp < $currentTimestamp && $currentLineNumber === 0) {
+            $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, 0, $linesTotal));
+            return $entity;
+        }
+        if ($timestamp > $currentTimestamp && $currentLineNumber === ($linesTotal - 1)) {
+            $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $linesTotal - 1, $linesTotal));
+            return $entity;
+        }
+
+        print_r($visited);exit;
+
         $line1 = array_pop($visited);
-        $file->seek($line1 - 1);
+        $file->seek($line1);
         $line1Content = $file->current();
         $line1Timestamp = (int)substr($line1Content, 0, strpos($line1Content, ':'));
 
         $line2 = array_pop($visited);
-        $file->seek($line2 - 1);
+        $file->seek($line2);
         $line2Content = $file->current();
         $line2Timestamp = (int)substr($line2Content, 0, strpos($line2Content, ':'));
 
@@ -97,13 +98,13 @@ class SearchInFileQuery
     private function getAllRecordsWithEqualTimestamp(SplFileObject $file, $line, $total): array
     {
         $result = [];
-        $file->seek($line - 1);
+        $file->seek($line);
         $mainLineContent = $file->current();
         $mainLineTimestamp = (int)substr($mainLineContent, 0, strpos($mainLineContent, ':'));
         $result[$mainLineTimestamp][$line] = $this->decodeLine($mainLineContent);
 
-        for ($i = $line - 1; $i > 0; $i--) {
-            $file->seek($i - 1);
+        for ($i = $line - 1; $i >= 0; $i--) {
+            $file->seek($i);
             $currentLineContent = $file->current();
             $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
             if ($currentLineTimestamp !== $mainLineTimestamp) {
@@ -111,8 +112,8 @@ class SearchInFileQuery
             }
             $result[$mainLineTimestamp][$i] = $this->decodeLine($currentLineContent);
         }
-        for ($i = $line + 1; $i <= $total; $i++) {
-            $file->seek($i - 1);
+        for ($i = $line + 1; $i < $total; $i++) {
+            $file->seek($i);
             $currentLineContent = $file->current();
             $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
             if ($currentLineTimestamp !== $mainLineTimestamp) {
@@ -120,6 +121,8 @@ class SearchInFileQuery
             }
             $result[$mainLineTimestamp][$i] = $this->decodeLine($currentLineContent);
         }
+
+        $result[$mainLineTimestamp] = array_values($result[$mainLineTimestamp]);
 
         return $result;
     }

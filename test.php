@@ -11,8 +11,7 @@ $timebase = new Timebase(__DIR__ . '/database/');
 //    ->execute();
 
 print_r($timebase->query()
-    ->storage(['test','12fF-3'])
-    ->timestamp($random = 1611256524)
+    ->timestamp($random = 1611774505)
     ->approximate()
     ->execute());
 

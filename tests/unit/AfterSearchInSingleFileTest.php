@@ -5,9 +5,9 @@ use Boruta\Timebase\Timebase;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Class ExactSearchInSingleFileTest
+ * Class AfterSearchInSingleFileTest
  */
-final class ExactSearchInSingleFileTest extends TestCase
+final class AfterSearchInSingleFileTest extends TestCase
 {
     private const DATABASE_DIR = __DIR__ . '/../database/';
 
@@ -28,7 +28,7 @@ final class ExactSearchInSingleFileTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testSearchForExactValueSingle(): void
+    public function testSearchForAfterValueSingle(): void
     {
         $timebase = new Timebase(self::DATABASE_DIR);
         $currentTimestamp = time();
@@ -39,20 +39,18 @@ final class ExactSearchInSingleFileTest extends TestCase
                     'test' => md5(uniqid('', true))
                 ])->execute();
             }
-            for ($j = 0; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->exact()->execute();
-                $resultExact = $result->getExact();
-                self::assertNotEmpty($resultExact);
-                self::assertTrue(isset($resultExact[$currentTimestamp + $j]));
-                self::assertCount(1, $resultExact[$currentTimestamp + $j]);
-            }
+            $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp - 1)->exact()->execute();
+            $resultAfter = $result->getAfter();
+            self::assertNotEmpty($resultAfter);
+            self::assertTrue(isset($resultAfter[$currentTimestamp]));
+            self::assertCount(1, $resultAfter[$currentTimestamp]);
         }
     }
 
     /**
      * @throws Exception
      */
-    public function testSearchForExactValueMultiple(): void
+    public function testSearchForAfterValueMultiple(): void
     {
         $timebase = new Timebase(self::DATABASE_DIR);
         $currentTimestamp = time();
@@ -69,13 +67,11 @@ final class ExactSearchInSingleFileTest extends TestCase
                     'test3' => md5(uniqid('', true))
                 ])->execute();
             }
-            for ($j = 0; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->exact()->execute();
-                $resultExact = $result->getExact();
-                self::assertNotEmpty($resultExact);
-                self::assertTrue(isset($resultExact[$currentTimestamp + $j]));
-                self::assertCount(3, $resultExact[$currentTimestamp + $j]);
-            }
+            $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp - 1)->exact()->execute();
+            $resultAfter = $result->getAfter();
+            self::assertNotEmpty($resultAfter);
+            self::assertTrue(isset($resultAfter[$currentTimestamp]));
+            self::assertCount(3, $resultAfter[$currentTimestamp]);
         }
     }
 }
