@@ -66,24 +66,12 @@ class SearchInFileQuery
             return $entity;
         }
 
-        print_r($visited);exit;
-
-        $line1 = array_pop($visited);
-        $file->seek($line1);
-        $line1Content = $file->current();
-        $line1Timestamp = (int)substr($line1Content, 0, strpos($line1Content, ':'));
-
-        $line2 = array_pop($visited);
-        $file->seek($line2);
-        $line2Content = $file->current();
-        $line2Timestamp = (int)substr($line2Content, 0, strpos($line2Content, ':'));
-
-        if ($line1Timestamp < $line2Timestamp) {
-            $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $line1, $linesTotal));
-            $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, $line2, $linesTotal));
+        if ($timestamp < $currentTimestamp) {
+            $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber - 1, $linesTotal));
+            $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber, $linesTotal));
         } else {
-            $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $line2, $linesTotal));
-            $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, $line1, $linesTotal));
+            $entity->setBefore($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber, $linesTotal));
+            $entity->setAfter($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber + 1, $linesTotal));
         }
 
         return $entity;
@@ -122,6 +110,7 @@ class SearchInFileQuery
             $result[$mainLineTimestamp][$i] = $this->decodeLine($currentLineContent);
         }
 
+        ksort($result[$mainLineTimestamp]);
         $result[$mainLineTimestamp] = array_values($result[$mainLineTimestamp]);
 
         return $result;
