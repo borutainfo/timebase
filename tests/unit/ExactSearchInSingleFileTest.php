@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Boruta\Timebase\Common\Constant\SearchStrategyConstant;
 use Boruta\Timebase\Timebase;
 use PHPUnit\Framework\TestCase;
 
@@ -40,7 +41,7 @@ final class ExactSearchInSingleFileTest extends TestCase
                 ])->execute();
             }
             for ($j = 0; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->exact()->execute();
+                $result = $timebase->search()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->strategy(SearchStrategyConstant::EXACT)->execute();
                 $resultExact = $result->getExact();
                 self::assertNotEmpty($resultExact);
                 self::assertTrue(isset($resultExact[$currentTimestamp + $j]));
@@ -70,7 +71,7 @@ final class ExactSearchInSingleFileTest extends TestCase
                 ])->execute();
             }
             for ($j = 0; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->exact()->execute();
+                $result = $timebase->search()->storage(['test' . $i])->timestamp($currentTimestamp + $j)->strategy(SearchStrategyConstant::EXACT)->execute();
                 $resultExact = $result->getExact();
                 self::assertNotEmpty($resultExact);
                 self::assertTrue(isset($resultExact[$currentTimestamp + $j]));

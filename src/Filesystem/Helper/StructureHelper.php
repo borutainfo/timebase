@@ -18,7 +18,7 @@ abstract class StructureHelper
     public static function createDirectoryStructure(string $dir): void
     {
         if (!file_exists($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            throw new RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            throw new RuntimeException(sprintf('Directory "%s" was not created.', $dir));
         }
     }
 }

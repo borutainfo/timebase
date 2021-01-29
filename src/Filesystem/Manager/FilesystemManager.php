@@ -4,7 +4,9 @@ declare(strict_types=1);
 namespace Boruta\Timebase\Filesystem\Manager;
 
 
-use Boruta\Timebase\Common\Exception\EmptyDatabaseException;
+use Boruta\Timebase\Common\Constant\DateTimeConstant;
+use Boruta\Timebase\Common\Exception\DataReadingException;
+use Boruta\Timebase\Common\Exception\DataSavingException;
 use Boruta\Timebase\Filesystem\Constant\ExtensionConstant;
 use Boruta\Timebase\Filesystem\Entity\FileSearchResultEntity;
 use Boruta\Timebase\Filesystem\Helper\FilenameHelper;
@@ -15,6 +17,7 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Class FilesystemManager
@@ -44,15 +47,15 @@ class FilesystemManager
 
     /**
      * @param array $storage
-     * @param array $data
+     * @param $data
      * @param int|null $timestamp
-     * @throws Exception
+     * @throws DataSavingException
      */
-    public function save(array $storage, array $data, int $timestamp = null): void
+    public function save(array $storage, $data, int $timestamp = null): void
     {
         try {
             $datetime = DateTime::createFromFormat('U', (string)($timestamp ?? time()));
-            $datetime->setTimezone(new DateTimeZone('UTC'));
+            $datetime->setTimezone(new DateTimeZone(DateTimeConstant::TIMEZONE));
             $filename = $datetime->format('Y-m-d') . ExtensionConstant::DB_EXTENSION;
 
             $databaseDirectoryPath = PathHelper::arrayToString([
@@ -63,15 +66,21 @@ class FilesystemManager
 
             $databaseFilePath = PathHelper::arrayToString([$databaseDirectoryPath, $filename]);
 
-            $valueToSave = $datetime->getTimestamp() . ':' . base64_encode(json_encode($data)) . PHP_EOL;
-            file_put_contents($databaseFilePath, $valueToSave, FILE_APPEND);
+            $valueToSave = $datetime->getTimestamp() . '/' . base64_encode(json_encode($data, JSON_THROW_ON_ERROR)) . PHP_EOL;
+
+            $result = file_put_contents($databaseFilePath, $valueToSave, FILE_APPEND);
+            if ($result === false) {
+                throw new RuntimeException('Unable to save data to file `' . $databaseFilePath . '`.');
+            }
         } catch (Exception $exception) {
-            $this->logger->error('Exception during saving the file', [
-                'exceptionClass' => get_class($exception),
-                'exceptionMessage' => $exception->getMessage(),
-                'exceptionTrace' => $exception->getTraceAsString()
-            ]);
-            throw $exception;
+            if ($this->logger !== null) {
+                $this->logger->error('Timebase exception: Exception during saving the file', [
+                    'exceptionClass' => get_class($exception),
+                    'exceptionMessage' => $exception->getMessage(),
+                    'exceptionTrace' => $exception->getTraceAsString()
+                ]);
+            }
+            throw new DataSavingException(DataSavingException::MESSAGE . ' Details: ' . $exception->getMessage());
         }
     }
 
@@ -79,9 +88,9 @@ class FilesystemManager
      * @param array $storagePath
      * @param int $timestamp
      * @return FileSearchResultEntity
-     * @throws Exception
+     * @throws DataReadingException
      */
-    public function fetch(array $storagePath, int $timestamp): FileSearchResultEntity
+    public function read(array $storagePath, int $timestamp): FileSearchResultEntity
     {
         try {
             $databaseDirectoryPath = PathHelper::arrayToString([
@@ -91,11 +100,11 @@ class FilesystemManager
 
             $files = glob(PathHelper::arrayToString([$databaseDirectoryPath, '*' . ExtensionConstant::DB_EXTENSION]));
             if (empty($files)) {
-                throw new EmptyDatabaseException('Not found `' . ExtensionConstant::DB_EXTENSION . '` files.');
+                throw new RuntimeException('Not found `' . ExtensionConstant::DB_EXTENSION . '` files.');
             }
 
             $datetime = DateTime::createFromFormat('U', (string)$timestamp);
-            $datetime->setTimezone(new DateTimeZone('UTC'));
+            $datetime->setTimezone(new DateTimeZone(DateTimeConstant::TIMEZONE));
             $filename = $datetime->format('Y-m-d') . ExtensionConstant::DB_EXTENSION;
 
             $files = FilenameHelper::clearFilenames($files);
@@ -136,13 +145,14 @@ class FilesystemManager
 
             return $globalResult;
         } catch (Exception $exception) {
-            print_r($exception->getMessage());exit;
-            $this->logger->error('Exception during reading the file', [
-                'exceptionClass' => get_class($exception),
-                'exceptionMessage' => $exception->getMessage(),
-                'exceptionTrace' => $exception->getTraceAsString()
-            ]);
-            throw $exception;
+            if ($this->logger !== null) {
+                $this->logger->error('Timebase exception: Exception during reading the file', [
+                    'exceptionClass' => get_class($exception),
+                    'exceptionMessage' => $exception->getMessage(),
+                    'exceptionTrace' => $exception->getTraceAsString()
+                ]);
+            }
+            throw new DataReadingException(DataReadingException::MESSAGE . ' Details: ' . $exception->getMessage());
         }
     }
 }

@@ -4,14 +4,16 @@ declare(strict_types=1);
 namespace Boruta\Timebase\Operation;
 
 
-use Boruta\Timebase\Common\Exception\DataSavingException;
+use Boruta\Timebase\Common\Constant\SearchStrategyConstant;
+use Boruta\Timebase\Common\Exception\DataReadingException;
+use Boruta\Timebase\Common\Presenter\SearchResultPresenter;
 use Boruta\Timebase\Filesystem\Manager\FilesystemManager;
 
 /**
- * Class InsertOperation
+ * Class SearchOperation
  * @package Boruta\Timebase\Operation
  */
-class InsertOperation
+class SearchOperation
 {
     /**
      * @var FilesystemManager
@@ -27,12 +29,16 @@ class InsertOperation
      */
     private $timestamp;
     /**
-     * @var mixed
+     * @var string
      */
-    private $data;
+    private $strategy = SearchStrategyConstant::NEAREST;
+    /**
+     * @var bool
+     */
+    private $all = false;
 
     /**
-     * InsertOperation constructor.
+     * SearchOperation constructor.
      * @param FilesystemManager $filesystemManager
      */
     public function __construct(FilesystemManager $filesystemManager)
@@ -61,20 +67,35 @@ class InsertOperation
     }
 
     /**
-     * @param $data
+     * @param string $strategy
      * @return $this
      */
-    public function set($data): self
+    public function strategy(string $strategy = SearchStrategyConstant::NEAREST): self
     {
-        $this->data = $data;
+        $this->strategy = $strategy;
+        return $this;
+    }
+
+
+    /**
+     * @return $this
+     */
+    public function all(): self
+    {
+        $this->all = true;
         return $this;
     }
 
     /**
-     * @throws DataSavingException
+     * @return array|null
+     * @throws DataReadingException
      */
-    public function execute(): void
+    public function execute(): ?array
     {
-        $this->filesystemManager->save($this->storage, $this->data, $this->timestamp);
+        if ($this->timestamp === null) {
+            $this->timestamp = time();
+        }
+        $resultEntity = $this->filesystemManager->read($this->storage, $this->timestamp);
+        return SearchResultPresenter::present($resultEntity, $this->strategy, $this->timestamp, $this->all);
     }
 }

@@ -6,7 +6,7 @@ namespace Boruta\Timebase;
 
 use Boruta\Timebase\Filesystem\Manager\FilesystemManager;
 use Boruta\Timebase\Operation\InsertOperation;
-use Boruta\Timebase\Operation\QueryOperation;
+use Boruta\Timebase\Operation\SearchOperation;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,10 +39,10 @@ class Timebase
     }
 
     /**
-     * @return QueryOperation
+     * @return SearchOperation
      */
-    public function query(): QueryOperation
+    public function search(): SearchOperation
     {
-        return new QueryOperation($this->filesystemManager);
+        return new SearchOperation($this->filesystemManager);
     }
 }

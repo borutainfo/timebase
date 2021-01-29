@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Boruta\Timebase\Common\Constant\SearchStrategyConstant;
 use Boruta\Timebase\Timebase;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +29,7 @@ final class BeforeAndAfterSearchInSingleFileTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testSearchForBeforeValueSingle(): void
+    public function testSearchForBeforeAndAfterValueSingle(): void
     {
         $timebase = new Timebase(self::DATABASE_DIR);
         $currentTimestamp = time();
@@ -40,7 +41,7 @@ final class BeforeAndAfterSearchInSingleFileTest extends TestCase
                 ])->execute();
             }
             for ($j = 1; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j * 2 - 1)->exact()->execute();
+                $result = $timebase->search()->storage(['test' . $i])->timestamp($currentTimestamp + $j * 2 - 1)->strategy(SearchStrategyConstant::EXACT)->execute();
 
                 $resultBefore = $result->getBefore();
                 self::assertNotEmpty($resultBefore);
@@ -58,7 +59,7 @@ final class BeforeAndAfterSearchInSingleFileTest extends TestCase
     /**
      * @throws Exception
      */
-    public function testSearchForBeforeValueMultiple(): void
+    public function testSearchForBeforeAndAfterValueMultiple(): void
     {
         $timebase = new Timebase(self::DATABASE_DIR);
         $currentTimestamp = time();
@@ -76,7 +77,7 @@ final class BeforeAndAfterSearchInSingleFileTest extends TestCase
                 ])->execute();
             }
             for ($j = 1; $j <= $i; $j++) {
-                $result = $timebase->query()->storage(['test' . $i])->timestamp($currentTimestamp + $j * 2 - 1)->exact()->execute();
+                $result = $timebase->search()->storage(['test' . $i])->timestamp($currentTimestamp + $j * 2 - 1)->strategy(SearchStrategyConstant::EXACT)->execute();
 
                 $resultBefore = $result->getBefore();
                 self::assertNotEmpty($resultBefore);

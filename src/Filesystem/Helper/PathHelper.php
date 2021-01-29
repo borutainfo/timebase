@@ -30,7 +30,7 @@ abstract class PathHelper
     public static function arrayToStringSanitized(array $pathArray): string
     {
         array_walk($pathArray, static function (&$value) {
-            $value = strtolower(preg_replace("/[^A-Za-z0-9]/", '', $value));
+            $value = strtolower(preg_replace("/\W/", '', $value));
         });
         return implode('/', $pathArray);
     }

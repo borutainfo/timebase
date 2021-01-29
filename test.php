@@ -1,18 +1,16 @@
 <?php
 
+use Boruta\Timebase\Common\Constant\SearchStrategyConstant;
 use Boruta\Timebase\Timebase;
 
 include 'vendor/autoload.php';
 
 $timebase = new Timebase(__DIR__ . '/database/');
 //$timebase->insert()
-//    ->storage(['test','12fF-3'])
-//    ->set(['jakiesdane'])
+//    ->storage(['test'])
+//    ->set(['asd'])
 //    ->execute();
 
-print_r($timebase->query()
-    ->timestamp($random = 1611774505)
-    ->approximate()
-    ->execute());
+var_dump($timebase->search()->storage(['test'])->all()->execute());
 
-var_dump($random);
+//var_dump($random);

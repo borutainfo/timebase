@@ -5,6 +5,7 @@ namespace Boruta\Timebase\Filesystem\Query;
 
 
 use Boruta\Timebase\Filesystem\Entity\FileSearchResultEntity;
+use JsonException;
 use SplFileObject;
 
 /**
@@ -17,6 +18,7 @@ class SearchInFileQuery
      * @param string $filePath
      * @param int $timestamp
      * @return FileSearchResultEntity
+     * @throws JsonException
      */
     public function execute(string $filePath, int $timestamp): FileSearchResultEntity
     {
@@ -35,15 +37,13 @@ class SearchInFileQuery
 
         $currentLineNumber = 0;
         $currentTimestamp = 0;
-        $visited = [];
 
         while ($low <= $high) {
             $currentLineNumber = (int)floor(($low + $high) / 2);
-            $visited[] = $currentLineNumber;
 
             $file->seek($currentLineNumber);
             $currentLineContent = $file->current();
-            $currentTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
+            $currentTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, '/'));
 
             if ($currentTimestamp === $timestamp) {
                 $entity->setExact($this->getAllRecordsWithEqualTimestamp($file, $currentLineNumber, $linesTotal));
@@ -82,19 +82,20 @@ class SearchInFileQuery
      * @param $line
      * @param $total
      * @return array
+     * @throws JsonException
      */
     private function getAllRecordsWithEqualTimestamp(SplFileObject $file, $line, $total): array
     {
         $result = [];
         $file->seek($line);
         $mainLineContent = $file->current();
-        $mainLineTimestamp = (int)substr($mainLineContent, 0, strpos($mainLineContent, ':'));
+        $mainLineTimestamp = (int)substr($mainLineContent, 0, strpos($mainLineContent, '/'));
         $result[$mainLineTimestamp][$line] = $this->decodeLine($mainLineContent);
 
         for ($i = $line - 1; $i >= 0; $i--) {
             $file->seek($i);
             $currentLineContent = $file->current();
-            $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
+            $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, '/'));
             if ($currentLineTimestamp !== $mainLineTimestamp) {
                 break;
             }
@@ -103,7 +104,7 @@ class SearchInFileQuery
         for ($i = $line + 1; $i < $total; $i++) {
             $file->seek($i);
             $currentLineContent = $file->current();
-            $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, ':'));
+            $currentLineTimestamp = (int)substr($currentLineContent, 0, strpos($currentLineContent, '/'));
             if ($currentLineTimestamp !== $mainLineTimestamp) {
                 break;
             }
@@ -119,9 +120,10 @@ class SearchInFileQuery
     /**
      * @param string $content
      * @return mixed
+     * @throws JsonException
      */
     private function decodeLine(string $content)
     {
-        return json_decode(base64_decode(substr($content, strpos($content, ':') + 1)), true);
+        return json_decode(base64_decode(substr($content, strpos($content, '/') + 1)), true, 512, JSON_THROW_ON_ERROR);
     }
 }
