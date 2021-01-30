@@ -1,10 +1,9 @@
-TimeBase
----
+# TimeBase
 ![Tests Status](https://badgen.net/badge/tests/success/green)
 
 Flat file database for storage any data as events in timeline and finding it for a given timestamp.
 
-### Table of Contents
+### Table of contents
 1. [Description](#description)
 2. [Requirements](#requirements)
 3. [Installation](#installation)
