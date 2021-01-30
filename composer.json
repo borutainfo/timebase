@@ -1,6 +1,6 @@
 {
   "name": "boruta/timebase",
-  "description": "Flat file database for storage data ordered over date and timestamp.",
+  "description": "Flat file database for storage any data as events in timeline and finding it for a given timestamp.",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -12,6 +12,11 @@
   "autoload": {
     "psr-4": {
       "Boruta\\Timebase\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\": "tests/unit/"
     }
   },
   "require": {
