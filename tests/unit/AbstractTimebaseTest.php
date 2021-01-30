@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 abstract class AbstractTimebaseTest extends TestCase
 {
-    private const DATABASE_DIR = __DIR__ . '/../_data/';
+    protected const DATABASE_DIR = __DIR__ . '/../_data/';
 
     /**
      * @var Timebase

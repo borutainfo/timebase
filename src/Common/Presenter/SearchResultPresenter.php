@@ -64,12 +64,15 @@ class SearchResultPresenter
             return null;
         }
 
+        $strategyResultTimestamp = (int)array_key_first($strategyResult);
+        $strategyResultAll = array_values($strategyResult[$strategyResultTimestamp]);
+
         $finalResult = [
-            'timestamp' => (int)array_key_first($strategyResult),
-            'value' => reset($strategyResult)[0]
+            'timestamp' => $strategyResultTimestamp,
+            'value' => $strategyResultAll[0]
         ];
         if ($all) {
-            $finalResult['all'] = reset($strategyResult);
+            $finalResult['all'] = $strategyResultAll;
         }
 
         return $finalResult;

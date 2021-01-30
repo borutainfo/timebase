@@ -112,7 +112,6 @@ class SearchInFileQuery
         }
 
         ksort($result[$mainLineTimestamp]);
-        $result[$mainLineTimestamp] = array_values($result[$mainLineTimestamp]);
 
         return $result;
     }

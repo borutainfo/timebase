@@ -9,7 +9,9 @@ use Boruta\Timebase\Common\Exception\DataReadingException;
 use Boruta\Timebase\Common\Exception\DataSavingException;
 use Boruta\Timebase\Filesystem\Constant\ExtensionConstant;
 use Boruta\Timebase\Filesystem\Entity\FileSearchResultEntity;
+use Boruta\Timebase\Filesystem\Helper\AppendDataToFileHelper;
 use Boruta\Timebase\Filesystem\Helper\FilenameHelper;
+use Boruta\Timebase\Filesystem\Helper\LineTimestampHelper;
 use Boruta\Timebase\Filesystem\Helper\PathHelper;
 use Boruta\Timebase\Filesystem\Helper\StructureHelper;
 use Boruta\Timebase\Filesystem\Query\SearchInFileQuery;
@@ -66,11 +68,34 @@ class FilesystemManager
 
             $databaseFilePath = PathHelper::arrayToString([$databaseDirectoryPath, $filename]);
 
-            $valueToSave = $datetime->getTimestamp() . '/' . base64_encode(json_encode($data, JSON_THROW_ON_ERROR)) . PHP_EOL;
+            $valueToSave = $datetime->getTimestamp() . '/' . base64_encode(json_encode($data,
+                    JSON_THROW_ON_ERROR)) . PHP_EOL;
 
-            $result = file_put_contents($databaseFilePath, $valueToSave, FILE_APPEND);
-            if ($result === false) {
-                throw new RuntimeException('Unable to save data to file `' . $databaseFilePath . '`.');
+            if (LineTimestampHelper::getLastLineTimestamp($databaseFilePath) <= $datetime->getTimestamp()) {
+                $result = file_put_contents($databaseFilePath, $valueToSave, FILE_APPEND);
+                if ($result === false) {
+                    throw new RuntimeException('Unable to save data to file `' . $databaseFilePath . '`.');
+                }
+            } elseif (LineTimestampHelper::getFirstLineTimestamp($databaseFilePath) > $datetime->getTimestamp()) {
+                AppendDataToFileHelper::append($databaseFilePath, $valueToSave, -1);
+            } else {
+                $searchInFileQuery = new SearchInFileQuery();
+                $result = $searchInFileQuery->execute($databaseFilePath, $datetime->getTimestamp());
+
+                $position = -1;
+                if (($resultData = $result->getExact()) !== null) {
+                    $position = (int)array_key_last(reset($resultData));
+                } elseif (($resultData = $result->getBefore()) !== null) {
+                    $position = (int)array_key_last(reset($resultData));
+                } elseif (($resultData = $result->getAfter()) !== null) {
+                    $position = (int)array_key_first(reset($resultData));
+                }
+
+                if ($position < 0) {
+                    throw new RuntimeException('Corrupted data structure in file `' . $databaseFilePath . '`.');
+                }
+
+                AppendDataToFileHelper::append($databaseFilePath, $valueToSave, $position);
             }
         } catch (Exception $exception) {
             if ($this->logger !== null) {
