@@ -1,5 +1,10 @@
 # TimeBase
 
+Flat file database for storage any data as events in timeline and finding it for a given timestamp. The data are stored in files, with the possibility of using multi-level namespaces - in this case, the files are stored in subdirectories. Each day is stored in a separate file named `YYYY-MM-DD.tb`.
+
+The data records are searched using a binary search algorithm, so it's quick and doesn't require loading the entire file into memory. Each record is one line in file, in format `{timestamp} / {data}` (`data` is result of `base64_encode(json_encode(...))`). The records are sorted, and you can add multiple records for one timestamp - they are saved and returned, in the order they were added.
+
+There are many use cases for such a database, e.g. storing stock exchange data (volumes, price values etc.) for trading strategy backtesting.
 ## Installation
 
 Install the library using Composer. Please read
@@ -64,17 +69,6 @@ $timebase->insert()
     ->execute();
 ```
 
-#### Insert data for given timestamp
-
-To add data for a given timestamp (not the current) use the method `->timestamp(int $timestamp)`. Example:
-```php
-$timebase->insert()
-    ->timestamp(1612022907)
-    ->set('test')
-    ->execute();
-```
-
-
 #### Setting the storage namespace
 
 You can store your data in different storages on many levels. Please use the method `->storage(array $storage)` to set this.
@@ -107,9 +101,19 @@ $result = $timebase->search()
     ->execute();
 ```
 
+#### Inserting data for specific timestamp
+
+To add data for a given timestamp (not the current) use the method `->timestamp(int $timestamp)`. Example:
+```php
+$timebase->insert()
+    ->timestamp(1612022907)
+    ->set('test')
+    ->execute();
+```
+
 #### Searching data for specific timestamp
 
-To find a record for a specific timestamp use the method use the method `->timestamp(int $timestamp)` during search query:
+To find a record for a specific timestamp use the method `->timestamp(int $timestamp)` during search query:
 
 ```php
 $result = $timebase->search()
@@ -142,6 +146,7 @@ array(3) {
   }
 }
 ```
+
 
 #### Searching strategies
 
